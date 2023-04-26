@@ -2,10 +2,14 @@ import re
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 import os
+from tokenizer import tokenize,computeWordFrequencies
+import json
 
 absolute_path = os.path.dirname(__file__)
-relative_path = "Logs/links.txt"
-FULL_LINK_PATH = os.path.join(absolute_path, relative_path)
+link_path = "Logs/links.txt"
+wordFreq_path = "Logs/freq.txt"
+FULL_LINK_PATH = os.path.join(absolute_path, link_path)
+FULL_FREQ_PATH = os.path.join(absolute_path, wordFreq_path)
 
 def scraper(url, resp):
     links = extract_next_links(url, resp)
@@ -29,7 +33,11 @@ def extract_next_links(url, resp):
     if resp.status!=200:
         return []
     soup = BeautifulSoup(resp.raw_response.content, "html.parser")
-    print(soup.get_text())
+
+    d = computeWordFrequencies(tokenize(soup.get_text()))
+    with open(FULL_FREQ_PATH, 'a') as file:
+        file.write(f"{json.dumps(d)}\n")
+
     for line in soup.find_all():
         retList.append(line.get('href'))
     return retList

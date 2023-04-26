@@ -2,21 +2,17 @@ import re
 import string
 #tokenize runs in exponential time because it loops through the file and grabs line by line. In the worst case, the line contains
 #the same number of words as the number of lines in the file making this O(n^2).
-def tokenize(filepath):
-    file = open(filepath, 'r')                                              #tokenize takes in a filepath and returns a list of all words separated by punctuation
+def tokenize(s):
+    #tokenize takes in a string and returns a list of all words separated by punctuation
     returnArr = []
-    while True:
-        s = file.readline()
-        if s == "":
-            break
-        alparr = re.findall(r"\w*",s)
-        for x in range(len(alparr)):
-            if alparr[x] != "" and alparr[x][-1] in string.punctuation:
-                alparr[x] = alparr[x][:-1]
-            if alparr[x] != "" and alparr[x][0] in string.punctuation:
-                alparr[x] = alparr[x][1:]
-            if alparr[x] != "":
-                returnArr.append(alparr[x].lower())
+    alparr = re.findall(r"\w*",s)
+    for x in range(len(alparr)):
+        if alparr[x] != "" and alparr[x][-1] in string.punctuation:
+            alparr[x] = alparr[x][:-1]
+        if alparr[x] != "" and alparr[x][0] in string.punctuation:
+            alparr[x] = alparr[x][1:]
+        if alparr[x] != "":
+            returnArr.append(alparr[x].lower())
     return returnArr
 
 #ComputeWordFrequencies runs in polynomial time because it loops through an array that contains n elements making it O(n).
