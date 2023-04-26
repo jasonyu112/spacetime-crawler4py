@@ -1,10 +1,19 @@
 import re
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
+import os
+
+absolute_path = os.path.dirname(__file__)
+relative_path = "Logs/links.txt"
+FULL_LINK_PATH = os.path.join(absolute_path, relative_path)
 
 def scraper(url, resp):
     links = extract_next_links(url, resp)
-    return [link for link in links if is_valid(link)]
+    linkList = [link for link in links if is_valid(link)]
+    file = open(FULL_LINK_PATH, 'a')
+    file.write(f"{linkList}\n")
+    file.close()
+    return linkList
 
 def extract_next_links(url, resp):
     # Implementation required.
@@ -17,12 +26,12 @@ def extract_next_links(url, resp):
     #         resp.raw_response.content: the content of the page!
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
     retList = []
-    print(resp.status)
     if resp.status!=200:
         return []
     soup = BeautifulSoup(resp.raw_response.content, "html.parser")
-    for link in soup.find_all('a'):
-        retList.append(link.get('href'))
+    print(soup.get_text())
+    for line in soup.find_all():
+        retList.append(line.get('href'))
     return retList
 
 def is_valid(url):
@@ -32,6 +41,8 @@ def is_valid(url):
     try:
         parsed = urlparse(url)
         if parsed.scheme not in set(["http", "https"]):
+            return False
+        if parsed.hostname not in set(["www.ics.uci.edu", "www.cs.uci.edu", "www.informatics.uci.edu", "www.stat.uci.edu"]):
             return False
         return not re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
