@@ -8,14 +8,17 @@ import json
 absolute_path = os.path.dirname(__file__)
 link_path = "Logs/links.txt"
 wordFreq_path = "Logs/freq.txt"
+all_link_path = "Logs/all_links.txt"
 FULL_LINK_PATH = os.path.join(absolute_path, link_path)
 FULL_FREQ_PATH = os.path.join(absolute_path, wordFreq_path)
+FULL_ALL_LINK_PATH = os.path.join(absolute_path, all_link_path)
 
 def scraper(url, resp):
     links = extract_next_links(url, resp)
     linkList = [link for link in links if is_valid(link)]
     file = open(FULL_LINK_PATH, 'a')
-    file.write(f"{linkList}\n")
+    for x in linkList:
+        file.write(f"{x}\n")
     file.close()
     return linkList
 
@@ -35,11 +38,24 @@ def extract_next_links(url, resp):
     soup = BeautifulSoup(resp.raw_response.content, "html.parser")
 
     d = computeWordFrequencies(tokenize(soup.get_text()))
+    new_D = {"url": resp.url, "dict": d}
     with open(FULL_FREQ_PATH, 'a') as file:
-        file.write(f"{json.dumps(d)}\n")
+        #if "ics.uci.edu" in resp.url:
+        #   file4.write(f"{json.dumps(new_D)}\n")
+        file.write(f"{json.dumps(new_D)}\n")
 
     for line in soup.find_all():
-        retList.append(line.get('href'))
+        newL = line.get('href')               #if url does not contain previous url or www then add line.get('href') to url and append
+        if newL != None and newL != "":
+            newL = newL.replace("\\", "").replace("\"", "")
+            if newL!= resp.url:
+                if newL[0] == "/":
+                    urlCheck = resp.url.split("/")
+                    if len(urlCheck)<10:
+                        newL = resp.url + newL
+                        retList.append(newL)
+                else:
+                    retList.append(newL)
     return retList
 
 def is_valid(url):
@@ -47,10 +63,13 @@ def is_valid(url):
     # If you decide to crawl it, return True; otherwise return False.
     # There are already some conditions that return False.
     try:
+        with open(FULL_ALL_LINK_PATH, 'a') as file:
+            if url !=None:
+                file.write(f"{url}\n")
         parsed = urlparse(url)
         if parsed.scheme not in set(["http", "https"]):
             return False
-        if parsed.hostname not in set(["www.ics.uci.edu", "www.cs.uci.edu", "www.informatics.uci.edu", "www.stat.uci.edu"]):
+        if parsed.hostname not in set(["www.ics.uci.edu", "www.cs.uci.edu", "www.informatics.uci.edu", "www.stat.uci.edu", "ics.uci.edu", "cs.uci.edu", "informatics.uci.edu", "stat.uci.edu"]):
             return False
         return not re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
