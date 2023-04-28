@@ -4,16 +4,20 @@ from urllib.parse import urlparse
 import os
 from tokenizer import tokenize,computeWordFrequencies
 import json
+from difflib import SequenceMatcher
+
 
 absolute_path = os.path.dirname(__file__)
 link_path = "Logs/links.txt"
 wordFreq_path = "Logs/freq.txt"
 all_link_path = "Logs/all_links.txt"
+file4_path = "Logs/problem4.txt"
 FULL_LINK_PATH = os.path.join(absolute_path, link_path)
 FULL_FREQ_PATH = os.path.join(absolute_path, wordFreq_path)
 FULL_ALL_LINK_PATH = os.path.join(absolute_path, all_link_path)
+FULL_FILE4_PATH = os.path.join(absolute_path, file4_path)
 already_visited = {}
-blacklist = {"http://www.ics.uci.edu/ugrad/courses/listing.php", "https://www.ics.uci.edu/privacy/index.php"}
+#blacklist = {"http://www.ics.uci.edu/ugrad/courses/listing.php", "https://www.ics.uci.edu/privacy/index.php"}
 
 def scraper(url, resp):
     links = extract_next_links(url, resp)
@@ -42,12 +46,12 @@ def extract_next_links(url, resp):
 
     d = computeWordFrequencies(tokenize(soup.get_text()))
     new_D = {"url": resp.url, "dict": d}
-    with open(FULL_FREQ_PATH, 'a') as file:
-        #if "ics.uci.edu" in resp.url:
-        #   file4.write(f"{json.dumps(new_D)}\n")
-        file.write(f"{json.dumps(new_D)}\n")
+    file = open(FULL_FREQ_PATH, 'a')
+    file.write(f"{json.dumps(new_D)}\n")
+    file.close()
 
-    for line in soup.find_all():
+    count = 0
+    for line in soup.find_all('a'):
         newL = line.get('href')               #if url does not contain previous url or www then add line.get('href') to url and append
         if newL != None and newL != "":
             newL = newL.replace("\\", "").replace("\"", "")
@@ -57,8 +61,14 @@ def extract_next_links(url, resp):
                     if len(urlCheck)<10:
                         newL = resp.url + newL
                         retList.append(newL)
+                        count+=1
                 else:
                     retList.append(newL)
+                    count+=1
+    newerD = {"url": resp.url, "unique": count}
+    file4 = open(FULL_FILE4_PATH, 'a')
+    if "ics.uci.edu" in resp.url:
+        file4.write(f"{json.dumps(newerD)}\n")
     return retList
 
 def is_valid(url):
@@ -78,7 +88,9 @@ def is_valid(url):
             return False
         if url in already_visited.keys():
             return False
-        if containInBlacklist(url):
+        #if containInBlacklist(url):
+            #return False
+        if isSimilar(url):
             return False
         return not re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
@@ -88,7 +100,8 @@ def is_valid(url):
             + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
             + r"|epub|dll|cnf|tgz|sha1"
             + r"|thmx|mso|arff|rtf|jar|csv"
-            + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower())
+            + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$"
+            + r"~\w+", parsed.path.lower())
 
     except TypeError:
         print ("TypeError for ", parsed)
@@ -105,9 +118,15 @@ def isRepeating(path):
                 if item == arr[counter]:
                     return True
         counter+=1
-
-
-def containInBlacklist(url):
-    for x in blacklist:
-        if url in x or x in url:
+def isSimilar(url):
+    for link in already_visited:
+        parsed1 = urlparse(url)
+        parsed2 = urlparse(link)
+        path = SequenceMatcher(None, parsed1.path, parsed2.path).ratio()
+        if path >.75:
             return True
+
+#def containInBlacklist(url):
+    #for x in blacklist:
+        #if url in x or x in url:
+            #return True
