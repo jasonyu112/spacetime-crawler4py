@@ -13,7 +13,7 @@ FULL_LINK_PATH = os.path.join(absolute_path, link_path)
 FULL_FREQ_PATH = os.path.join(absolute_path, wordFreq_path)
 FULL_ALL_LINK_PATH = os.path.join(absolute_path, all_link_path)
 already_visited = {}
-blacklist = {"http://www.ics.uci.edu/ugrad/courses/listing.php"}
+blacklist = {"http://www.ics.uci.edu/ugrad/courses/listing.php", "https://www.ics.uci.edu/privacy/index.php"}
 
 def scraper(url, resp):
     links = extract_next_links(url, resp)
@@ -96,10 +96,16 @@ def is_valid(url):
 
 def isRepeating(path):
     arr = path.split("/")
-    last = arr[0]
-    for x in arr[1:]:
-        if x == last:
-            return True
+    counter = 0
+    while True:
+        if counter>=len(arr):
+            break
+        for innerCounter, item in enumerate(arr):
+            if counter!= innerCounter:
+                if item == arr[counter]:
+                    return True
+        counter+=1
+
 
 def containInBlacklist(url):
     for x in blacklist:
