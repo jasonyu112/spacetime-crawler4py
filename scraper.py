@@ -12,12 +12,15 @@ all_link_path = "Logs/all_links.txt"
 FULL_LINK_PATH = os.path.join(absolute_path, link_path)
 FULL_FREQ_PATH = os.path.join(absolute_path, wordFreq_path)
 FULL_ALL_LINK_PATH = os.path.join(absolute_path, all_link_path)
+already_visited = {}
+blacklist = {"http://www.ics.uci.edu/ugrad/courses/listing.php"}
 
 def scraper(url, resp):
     links = extract_next_links(url, resp)
     linkList = [link for link in links if is_valid(link)]
     file = open(FULL_LINK_PATH, 'a')
     for x in linkList:
+        already_visited[x] = 1
         file.write(f"{x}\n")
     file.close()
     return linkList
@@ -71,6 +74,12 @@ def is_valid(url):
             return False
         if parsed.hostname not in set(["www.ics.uci.edu", "www.cs.uci.edu", "www.informatics.uci.edu", "www.stat.uci.edu", "ics.uci.edu", "cs.uci.edu", "informatics.uci.edu", "stat.uci.edu"]):
             return False
+        if isRepeating(parsed.path):
+            return False
+        if url in already_visited.keys():
+            return False
+        if containInBlacklist(url):
+            return False
         return not re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
             + r"|png|tiff?|mid|mp2|mp3|mp4"
@@ -84,3 +93,15 @@ def is_valid(url):
     except TypeError:
         print ("TypeError for ", parsed)
         raise
+
+def isRepeating(path):
+    arr = path.split("/")
+    last = arr[0]
+    for x in arr[1:]:
+        if x == last:
+            return True
+
+def containInBlacklist(url):
+    for x in blacklist:
+        if url in x or x in url:
+            return True
