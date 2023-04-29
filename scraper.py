@@ -18,6 +18,8 @@ FULL_ALL_LINK_PATH = os.path.join(absolute_path, all_link_path)
 FULL_FILE4_PATH = os.path.join(absolute_path, file4_path)
 already_visited = {}
 #blacklist = {"http://www.ics.uci.edu/ugrad/courses/listing.php", "https://www.ics.uci.edu/privacy/index.php"}
+file = open(FULL_FREQ_PATH, 'a')
+file.close()
 
 def scraper(url, resp):
     links = extract_next_links(url, resp)
@@ -46,25 +48,28 @@ def extract_next_links(url, resp):
 
     d = computeWordFrequencies(tokenize(soup.get_text()))
     new_D = {"url": resp.url, "dict": d}
+    with open(FULL_FREQ_PATH, 'r') as fileFreq:
+        data = fileFreq.readline()
+        while data:
+            js = json.loads(data)
+            if isTextSimilar(str(js["dict"]), str(new_D["dict"])):
+                return []
+            data = fileFreq.readline()
     file = open(FULL_FREQ_PATH, 'a')
     file.write(f"{json.dumps(new_D)}\n")
     file.close()
-
     count = 0
-    for line in soup.find_all('a'):
+    for line in soup.find_all():
         newL = line.get('href')               #if url does not contain previous url or www then add line.get('href') to url and append
         if newL != None and newL != "":
             newL = newL.replace("\\", "").replace("\"", "")
-            if newL!= resp.url:
-                if newL[0] == "/":
-                    urlCheck = resp.url.split("/")
-                    if len(urlCheck)<10:
-                        newL = resp.url + newL
-                        retList.append(newL)
-                        count+=1
-                else:
+            if newL[0] == "/":
+                    newL = resp.url + newL
                     retList.append(newL)
                     count+=1
+            else:
+                retList.append(newL)
+                count+=1
     newerD = {"url": resp.url, "unique": count}
     file4 = open(FULL_FILE4_PATH, 'a')
     if "ics.uci.edu" in resp.url:
@@ -88,8 +93,6 @@ def is_valid(url):
             return False
         if url in already_visited.keys():
             return False
-        #if containInBlacklist(url):
-            #return False
         if isSimilar(url):
             return False
         return not re.match(
@@ -100,8 +103,7 @@ def is_valid(url):
             + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
             + r"|epub|dll|cnf|tgz|sha1"
             + r"|thmx|mso|arff|rtf|jar|csv"
-            + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$"
-            + r"~\w+", parsed.path.lower())
+            + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower())
 
     except TypeError:
         print ("TypeError for ", parsed)
@@ -118,15 +120,17 @@ def isRepeating(path):
                 if item == arr[counter]:
                     return True
         counter+=1
+
 def isSimilar(url):
     for link in already_visited:
         parsed1 = urlparse(url)
         parsed2 = urlparse(link)
-        path = SequenceMatcher(None, parsed1.path, parsed2.path).ratio()
-        if path >.75:
-            return True
+        if parsed1.hostname == parsed2.hostname:
+            path = SequenceMatcher(None, parsed1.path, parsed2.path).ratio()
+            if path >.9:
+                return True
+    return False
 
-#def containInBlacklist(url):
-    #for x in blacklist:
-        #if url in x or x in url:
-            #return True
+def isTextSimilar(dict1, dict2):
+    r = SequenceMatcher(None, str(dict1),str(dict2)).ratio()
+    return r>.9
