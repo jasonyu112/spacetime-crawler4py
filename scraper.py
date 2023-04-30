@@ -68,23 +68,17 @@ def extract_next_links(url, resp):
             newL = newL.replace("\\", "").replace("\"", "")
             if type(newL) is not str or len(newL) == 0:
                 pass
-            elif newL[0].isalnum():
-                newL = resp.url + newL
+            elif "mailto:" in newL:
+                pass
+            elif newL[0].isalnum() and "/" not in newL:
+                index = resp.url.rfind("/")
+                newL = resp.url[:index+1] + newL
                 retList.append(newL)
                 count+=1
-            elif newL[0] == "/":
+            elif len(newL) >1 and newL[0] == "/" and newL[1].isalnum():
                 newL = newUrl.scheme+"://"+newUrl.hostname + newL                                       #original was newL = resp.url + newL
                 retList.append(newL)
                 count+=1
-            elif newL[:3] == "../":
-                if url[-1] == "/":
-                    newL = url + newL[3:]
-                    retList.append(newL)
-                    count+=1
-                else:
-                    newL = url + newL[2:]
-                    retList.append(newL)
-                    count+=1
             else:
                 retList.append(newL)
                 count+=1
