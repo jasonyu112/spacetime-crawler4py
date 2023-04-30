@@ -1,6 +1,6 @@
 import re
 from bs4 import BeautifulSoup
-from urllib.parse import urlparse
+from urllib.parse import urlparse,urldefrag
 import os
 from tokenizer import tokenize,computeWordFrequencies
 import json
@@ -29,12 +29,6 @@ def scraper(url, resp):
             already_visited[x] = 1
             file.write(f"{x}\n")
         file.close()
-        soup = BeautifulSoup(resp.raw_response.content, "html.parser")
-        d = computeWordFrequencies(tokenize(soup.get_text()))
-        new_D = {"url": resp.url, "dict": d}
-        file = open(FULL_FREQ_PATH, 'a')
-        file.write(f"{json.dumps(new_D)}\n")
-        file.close()
     return linkList
 
 def extract_next_links(url, resp):
@@ -54,6 +48,8 @@ def extract_next_links(url, resp):
         return []
     soup = BeautifulSoup(resp.raw_response.content, "html.parser")
 
+    d = computeWordFrequencies(tokenize(soup.get_text()))
+    new_D = {"url": resp.url, "dict": d}
     with open(FULL_FREQ_PATH, 'r') as fileFreq:                             #bad web pages are discontinued through comparing texts
         data = fileFreq.readline()
         while data:
@@ -61,16 +57,32 @@ def extract_next_links(url, resp):
             if isTextSimilar(str(js["dict"]), str(new_D["dict"])):
                 return []
             data = fileFreq.readline()
-
+    file = open(FULL_FREQ_PATH, 'a')
+    file.write(f"{json.dumps(new_D)}\n")
+    file.close()
     count = 0
+    newUrl = urlparse(url)
     for line in soup.find_all():
         newL = line.get('href')
         if newL != None and newL != "":
             newL = newL.replace("\\", "").replace("\"", "")
             if type(newL) is not str or len(newL) == 0:
                 pass
+            elif newL[0].isalnum():
+                newL = resp.url + newL
+                retList.append(newL)
+                count+=1
             elif newL[0] == "/":
-                    newL = url + newL
+                newL = newUrl.scheme+"://"+newUrl.hostname + newL                                       #original was newL = resp.url + newL
+                retList.append(newL)
+                count+=1
+            elif newL[:3] == "../":
+                if url[-1] == "/":
+                    newL = url + newL[3:]
+                    retList.append(newL)
+                    count+=1
+                else:
+                    newL = url + newL[2:]
                     retList.append(newL)
                     count+=1
             else:
@@ -90,6 +102,7 @@ def is_valid(url):
         with open(FULL_ALL_LINK_PATH, 'a') as file:
             if url !=None:
                 file.write(f"{url}\n")
+        url = urldefrag(url)[0]
         parsed = urlparse(url)
         if parsed.scheme not in set(["http", "https"]):
             return False
@@ -119,7 +132,7 @@ def isSimilar(url):
         parsed2 = urlparse(link)
         if parsed1.hostname == parsed2.hostname:
             path = SequenceMatcher(None, parsed1.path, parsed2.path).ratio()
-            if path >.97:
+            if path >.90:
                 return True
     return False
 
