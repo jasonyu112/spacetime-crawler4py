@@ -70,6 +70,9 @@ def extract_next_links(url, resp):
                 pass
             elif "mailto:" in newL:
                 pass
+            elif len(newL)>2 and newL[:2] == "//":
+                retList.append(newL)
+                count+=1
             elif newL[0].isalnum() and "/" not in newL:
                 index = resp.url.rfind("/")
                 newL = resp.url[:index+1] + newL
@@ -93,11 +96,13 @@ def is_valid(url):
     # If you decide to crawl it, return True; otherwise return False.
     # There are already some conditions that return False.
     try:
+        if url == None:
+            return False
+        url = urldefrag(url)[0]
+        parsed = urlparse(url)
         with open(FULL_ALL_LINK_PATH, 'a') as file:
             if url !=None:
                 file.write(f"{url}\n")
-        url = urldefrag(url)[0]
-        parsed = urlparse(url)
         if parsed.scheme not in set(["http", "https"]):
             return False
         if not containsHost(parsed.hostname):
