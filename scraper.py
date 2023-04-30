@@ -17,18 +17,24 @@ FULL_FREQ_PATH = os.path.join(absolute_path, wordFreq_path)
 FULL_ALL_LINK_PATH = os.path.join(absolute_path, all_link_path)
 FULL_FILE4_PATH = os.path.join(absolute_path, file4_path)
 already_visited = {}
-#blacklist = {"http://www.ics.uci.edu/ugrad/courses/listing.php", "https://www.ics.uci.edu/privacy/index.php"}
 file = open(FULL_FREQ_PATH, 'a')
 file.close()
 
 def scraper(url, resp):
     links = extract_next_links(url, resp)
     linkList = [link for link in links if is_valid(link)]
-    file = open(FULL_LINK_PATH, 'a')
-    for x in linkList:
-        already_visited[x] = 1
-        file.write(f"{x}\n")
-    file.close()
+    if len(linkList) >0:
+        file = open(FULL_LINK_PATH, 'a')
+        for x in linkList:
+            already_visited[x] = 1
+            file.write(f"{x}\n")
+        file.close()
+        soup = BeautifulSoup(resp.raw_response.content, "html.parser")
+        d = computeWordFrequencies(tokenize(soup.get_text()))
+        new_D = {"url": resp.url, "dict": d}
+        file = open(FULL_FREQ_PATH, 'a')
+        file.write(f"{json.dumps(new_D)}\n")
+        file.close()
     return linkList
 
 def extract_next_links(url, resp):
@@ -42,29 +48,29 @@ def extract_next_links(url, resp):
     #         resp.raw_response.content: the content of the page!
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
     retList = []
-    if resp.status!=200:
+    if resp.status!=200:                                                    #checks for webpage errors
+        return []
+    if resp.raw_response == None:
         return []
     soup = BeautifulSoup(resp.raw_response.content, "html.parser")
 
-    d = computeWordFrequencies(tokenize(soup.get_text()))
-    new_D = {"url": resp.url, "dict": d}
-    with open(FULL_FREQ_PATH, 'r') as fileFreq:
+    with open(FULL_FREQ_PATH, 'r') as fileFreq:                             #bad web pages are discontinued through comparing texts
         data = fileFreq.readline()
         while data:
             js = json.loads(data)
             if isTextSimilar(str(js["dict"]), str(new_D["dict"])):
                 return []
             data = fileFreq.readline()
-    file = open(FULL_FREQ_PATH, 'a')
-    file.write(f"{json.dumps(new_D)}\n")
-    file.close()
+
     count = 0
     for line in soup.find_all():
-        newL = line.get('href')               #if url does not contain previous url or www then add line.get('href') to url and append
+        newL = line.get('href')
         if newL != None and newL != "":
             newL = newL.replace("\\", "").replace("\"", "")
-            if newL[0] == "/":
-                    newL = resp.url + newL
+            if type(newL) is not str or len(newL) == 0:
+                pass
+            elif newL[0] == "/":
+                    newL = url + newL
                     retList.append(newL)
                     count+=1
             else:
@@ -87,9 +93,7 @@ def is_valid(url):
         parsed = urlparse(url)
         if parsed.scheme not in set(["http", "https"]):
             return False
-        if parsed.hostname not in set(["www.ics.uci.edu", "www.cs.uci.edu", "www.informatics.uci.edu", "www.stat.uci.edu", "ics.uci.edu", "cs.uci.edu", "informatics.uci.edu", "stat.uci.edu"]):
-            return False
-        if isRepeating(parsed.path):
+        if not containsHost(parsed.hostname):
             return False
         if url in already_visited.keys():
             return False
@@ -109,28 +113,25 @@ def is_valid(url):
         print ("TypeError for ", parsed)
         raise
 
-def isRepeating(path):
-    arr = path.split("/")
-    counter = 0
-    while True:
-        if counter>=len(arr):
-            break
-        for innerCounter, item in enumerate(arr):
-            if counter!= innerCounter:
-                if item == arr[counter]:
-                    return True
-        counter+=1
-
 def isSimilar(url):
     for link in already_visited:
         parsed1 = urlparse(url)
         parsed2 = urlparse(link)
         if parsed1.hostname == parsed2.hostname:
             path = SequenceMatcher(None, parsed1.path, parsed2.path).ratio()
-            if path >.9:
+            if path >.97:
                 return True
     return False
 
 def isTextSimilar(dict1, dict2):
     r = SequenceMatcher(None, str(dict1),str(dict2)).ratio()
     return r>.9
+
+def containsHost(hostName):
+    if hostName==None:
+        return False
+    compareSet = set(["www.ics.uci.edu", "www.cs.uci.edu", "www.informatics.uci.edu", "www.stat.uci.edu", "ics.uci.edu", "cs.uci.edu", "informatics.uci.edu", "stat.uci.edu"])
+    for name in compareSet:
+        if name in hostName:
+            return True
+    return False
