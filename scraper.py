@@ -169,7 +169,7 @@ def isTextSimilar(dict1, dict2):
 def containsHost(hostName):
     if hostName==None:
         return False
-    compareSet = set(["www.ics.uci.edu", "www.cs.uci.edu", "www.informatics.uci.edu", "www.stat.uci.edu", "ics.uci.edu", "cs.uci.edu", "informatics.uci.edu", "stat.uci.edu"])
+    compareSet = set(["www.ics.uci.edu", "www.cs.uci.edu", "www.informatics.uci.edu", "www.stat.uci.edu", ".ics.uci.edu", ".cs.uci.edu", ".informatics.uci.edu", ".stat.uci.edu"])
     for name in compareSet:
         if name in hostName:
             return True
