@@ -50,28 +50,32 @@ def extract_next_links(url, resp):
         return []
     soup = BeautifulSoup(resp.raw_response.content, "html.parser")
 
-    d = computeWordFrequencies(tokenize(soup.get_text()))
-    new_D = {"url": resp.url, "dict": d}
-    freq_counter =0
-    with open(FULL_FREQ_PATH, 'r') as fileFreq:                             #bad web pages are discontinued through comparing texts
-        data = fileFreq.readline()
-        while data:
-            js = json.loads(data)
-            if isTextSimilar(str(js["dict"]), str(new_D["dict"])):
-                return []
-            freq_counter+=1
+    text = soup.get_text()
+    if len(text) > 500:
+
+        d = computeWordFrequencies(tokenize(text))
+    
+        new_D = {"url": resp.url, "dict": d}
+        freq_counter =0
+        with open(FULL_FREQ_PATH, 'r') as fileFreq:                             #bad web pages are discontinued through comparing texts
             data = fileFreq.readline()
-    if freq_counter>500:
-        file = open(FULL_FREQ_PATH, 'w')
+            while data:
+                js = json.loads(data)
+                if isTextSimilar(str(js["dict"]), str(new_D["dict"])):
+                    return []
+                freq_counter+=1
+                data = fileFreq.readline()
+        if freq_counter>250:
+            file = open(FULL_FREQ_PATH, 'w')
+            file.write(f"{json.dumps(new_D)}\n")
+            file.close()
+        else:
+            file = open(FULL_FREQ_PATH, 'a')
+            file.write(f"{json.dumps(new_D)}\n")
+            file.close()
+        file = open(FULL_PROBLEM3_PATH, 'a')
         file.write(f"{json.dumps(new_D)}\n")
         file.close()
-    else:
-        file = open(FULL_FREQ_PATH, 'a')
-        file.write(f"{json.dumps(new_D)}\n")
-        file.close()
-    file = open(FULL_PROBLEM3_PATH, 'a')
-    file.write(f"{json.dumps(new_D)}\n")
-    file.close()
     count = 0
     newUrl = urlparse(url)
     for line in soup.find_all():
