@@ -12,9 +12,11 @@ link_path = "Logs/links.txt"
 wordFreq_path = "Logs/freq.txt"
 all_link_path = "Logs/all_links.txt"
 file4_path = "Logs/problem4.txt"
+problem3_path = "Logs/problem3.txt"
 FULL_LINK_PATH = os.path.join(absolute_path, link_path)
 FULL_FREQ_PATH = os.path.join(absolute_path, wordFreq_path)
 FULL_ALL_LINK_PATH = os.path.join(absolute_path, all_link_path)
+FULL_PROBLEM3_PATH = os.path.join(absolute_path, problem3_path)
 FULL_FILE4_PATH = os.path.join(absolute_path, file4_path)
 already_visited = {}
 file = open(FULL_FREQ_PATH, 'a')
@@ -50,14 +52,24 @@ def extract_next_links(url, resp):
 
     d = computeWordFrequencies(tokenize(soup.get_text()))
     new_D = {"url": resp.url, "dict": d}
+    freq_counter =0
     with open(FULL_FREQ_PATH, 'r') as fileFreq:                             #bad web pages are discontinued through comparing texts
         data = fileFreq.readline()
         while data:
             js = json.loads(data)
             if isTextSimilar(str(js["dict"]), str(new_D["dict"])):
                 return []
+            freq_counter+=1
             data = fileFreq.readline()
-    file = open(FULL_FREQ_PATH, 'a')
+    if freq_counter>500:
+        file = open(FULL_FREQ_PATH, 'w')
+        file.write(f"{json.dumps(new_D)}\n")
+        file.close()
+    else:
+        file = open(FULL_FREQ_PATH, 'a')
+        file.write(f"{json.dumps(new_D)}\n")
+        file.close()
+    file = open(FULL_PROBLEM3_PATH, 'a')
     file.write(f"{json.dumps(new_D)}\n")
     file.close()
     count = 0
@@ -97,6 +109,8 @@ def is_valid(url):
     # There are already some conditions that return False.
     try:
         if url == None:
+            return False
+        if url == "http://www.informatics.uci.edu/files/pdf/InformaticsBrochure-March2018":
             return False
         url = urldefrag(url)[0]
         parsed = urlparse(url)
