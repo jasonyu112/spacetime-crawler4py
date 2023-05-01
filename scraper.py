@@ -119,6 +119,12 @@ def is_valid(url):
             return False
         if url == "https://grape.ics.uci.edu/wiki/public/zip-attachment/wiki/cs122b-2017-winter-project1-install-tomcat-on-aws":
             return False
+        if url == "http://www.ics.uci.edu/~shantas/publications/19-IoT_Notary_NCA_NishaShantanu_best_paper.ppsx":
+            return False
+        if url == "http://www.ics.uci.edu/~shantas/publications/20-secret-sharing-aggregation-TKDE-shantanu":
+            return False
+        if "zip-attachment" in url or "raw-attachment" in url:
+            return False
         url = urldefrag(url)[0]
         parsed = urlparse(url)
         with open(FULL_ALL_LINK_PATH, 'a') as file:
@@ -139,7 +145,7 @@ def is_valid(url):
             + r"|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx|names"
             + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
             + r"|epub|dll|cnf|tgz|sha1"
-            + r"|thmx|mso|arff|rtf|jar|csv"
+            + r"|thmx|mso|arff|rtf|jar|csv|ppsx"
             + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower())
 
     except TypeError:
