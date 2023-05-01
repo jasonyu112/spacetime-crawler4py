@@ -51,28 +51,29 @@ def extract_next_links(url, resp):
     soup = BeautifulSoup(resp.raw_response.content, "html.parser")
 
     text = soup.get_text()
-    if len(text) > 500:
 
-        d = computeWordFrequencies(tokenize(text))
-    
-        new_D = {"url": resp.url, "dict": d}
-        freq_counter =0
-        with open(FULL_FREQ_PATH, 'r') as fileFreq:                             #bad web pages are discontinued through comparing texts
+
+    d = computeWordFrequencies(tokenize(text))
+
+    new_D = {"url": resp.url, "dict": d}
+    freq_counter =0
+    with open(FULL_FREQ_PATH, 'r') as fileFreq:                             #bad web pages are discontinued through comparing texts
+        data = fileFreq.readline()
+        while data:
+            js = json.loads(data)
+            if isTextSimilar(str(js["dict"]), str(new_D["dict"])):
+                return []
+            freq_counter+=1
             data = fileFreq.readline()
-            while data:
-                js = json.loads(data)
-                if isTextSimilar(str(js["dict"]), str(new_D["dict"])):
-                    return []
-                freq_counter+=1
-                data = fileFreq.readline()
-        if freq_counter>250:
-            file = open(FULL_FREQ_PATH, 'w')
-            file.write(f"{json.dumps(new_D)}\n")
-            file.close()
-        else:
-            file = open(FULL_FREQ_PATH, 'a')
-            file.write(f"{json.dumps(new_D)}\n")
-            file.close()
+    if freq_counter>150:
+        file = open(FULL_FREQ_PATH, 'w')
+        file.write(f"{json.dumps(new_D)}\n")
+        file.close()
+    else:
+        file = open(FULL_FREQ_PATH, 'a')
+        file.write(f"{json.dumps(new_D)}\n")
+        file.close()
+    if len(text) > 500:
         file = open(FULL_PROBLEM3_PATH, 'a')
         file.write(f"{json.dumps(new_D)}\n")
         file.close()
@@ -115,6 +116,8 @@ def is_valid(url):
         if url == None:
             return False
         if url == "http://www.informatics.uci.edu/files/pdf/InformaticsBrochure-March2018":
+            return False
+        if url == "https://grape.ics.uci.edu/wiki/public/zip-attachment/wiki/cs122b-2017-winter-project1-install-tomcat-on-aws":
             return False
         url = urldefrag(url)[0]
         parsed = urlparse(url)
