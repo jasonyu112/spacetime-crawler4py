@@ -104,7 +104,7 @@ def extract_next_links(url, resp):
                 count+=1
     newerD = {"url": resp.url, "unique": count}
     file4 = open(FULL_FILE4_PATH, 'a')
-    if "ics.uci.edu" in resp.url:
+    if ".ics.uci.edu" in resp.url:
         file4.write(f"{json.dumps(newerD)}\n")
     return retList
 
